@@ -16,7 +16,7 @@ def get_group_availability(pk, token):
     return {
         "id": pk,
         "token": token,
-        "status": random.choice(["Доступен", "Недоступен"])
+        "availability": random.choice(["Доступен", "Недоступен"])
     }
 
 def group_availability_callback(task):
@@ -25,17 +25,19 @@ def group_availability_callback(task):
     except concurrent.futures._base.CancelledError:
         return
 
-    nurl = str(CALLBACK_URL + '/enrollment_to_group/status_change')
-    answer = {"ID": int(result["id"]), "Status": str(result["status"])}
+    if (random.randint(1, 5) == 3):
+        result["availability"] = "error"
+
+    nurl = str(CALLBACK_URL + '/enrollment_to_group/set_group_availability?id=' + result["id"] + '&availability=' + result["availability"])
     headers = {"Content-Type": "application/json", "Authorization": "Bearer " + str(result["token"])}
 
-    if (random.randint(1, 5) == 3):
-        answer["Status"] = "error"
-
-    requests.put(nurl, json=answer, timeout=3, headers=headers)
+    requests.put(nurl, json={}, timeout=3, headers=headers)
 
 @api_view(['POST'])
 def set_group_availability(request):
+    print(request.data)
+    if "token" not in request.data.keys():
+        return Response(status=status.HTTP_401_UNAUTHORIZED)
     if "token" in request.data.keys() and "pk" in request.data.keys():
         id = request.data["pk"]
         token = request.data["token"]
